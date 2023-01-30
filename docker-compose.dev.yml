@@ -1,0 +1,20 @@
+version: '3'
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web.dev
+    volumes:
+      # You will need this for the nodemon
+      - ./:/usr/src/app/web
+    env_file: .env
+    ports:
+      - "$PORT:$PORT"
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker.dev
+    volumes:
+      # You will need this for the nodemon
+      - ./:/usr/src/app/worker
+    env_file: .env
