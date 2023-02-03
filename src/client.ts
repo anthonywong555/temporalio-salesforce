@@ -2,12 +2,12 @@
  * Imports
  */
 import 'dotenv/config';
-import express from 'express';
+import express, { response } from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import fs from 'fs';
 import { Connection, WorkflowClient } from '@temporalio/client';
-import { example } from './workflows';
+import { refreshSalesforceAccessToken, getSalesforceAccessToken } from './workflows';
 import { Example_Request, Example_Response } from "./types";
 
 /**
@@ -19,16 +19,30 @@ app.use(cors());
 
 const PORT = process.env.PORT ? process.env.PORT : '3000';
 
-const examplePostHandler = async(payload: Example_Request) => {
+const WORKFLOW_ID = 'salesforce-access-token';
+
+const run = async () => {
   try {
     const env = getEnv();
     const {taskQueue} = env;
     const client = await getTemporalClient(env);
-    const result = await client.execute(example, {
+    await client.execute(refreshSalesforceAccessToken, {
       taskQueue,
-      workflowId: `my-business-id-${Date.now()}`,
-      args: [payload],
+      workflowId: WORKFLOW_ID,
+      args: [],
     });
+  } catch(e) {
+    //console.log('Error: ', e);
+    //throw e;
+  }
+}
+
+const examplePostHandler = async(payload: Example_Request) => {
+  try {
+    const env = getEnv();
+    const client = await getTemporalClient(env);
+    const handle = client.getHandle(WORKFLOW_ID);
+    const result = await handle.query(getSalesforceAccessToken);
     return result;
   } catch (e) {
     throw e;
@@ -118,3 +132,5 @@ export function getEnv(): Env {
     taskQueue: process.env.TEMPORAL_TASK_QUEUE || 'hello-world-mtls',
   };
 }
+
+run();
